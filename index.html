@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回调反弹买卖目标计算器</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --buy-color: #2ecc71;
+            --sell-color: #e74c3c;
+            --bg-dark: #1e1e2d;
+            --card-bg: #2a2a3c;
+            --text-light: #f8f9fa;
+            --border-color: #3a3a4c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #2c3e50 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(42, 42, 60, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #bdc3c7;
+            font-size: 1.1rem;
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .tab.active {
+            background: var(--primary-color);
+        }
+        
+        .tab.buy-tab.active {
+            background: var(--buy-color);
+        }
+        
+        .tab.sell-tab.active {
+            background: var(--sell-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+            font-size: 1.6rem;
+        }
+        
+        .buy-title {
+            color: var(--buy-color);
+        }
+        
+        .sell-title {
+            color: var(--sell-color);
+        }
+        
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #bdc3c7;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+        
+        .calculate-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .calculate-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .reset-btn {
+            background: #7f8c8d;
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            background: #636e72;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .result-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .price-levels {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .price-level {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .price-level.buy {
+            border-left: 4px solid var(--buy-color);
+        }
+        
+        .price-level.sell {
+            border-left: 4px solid var(--sell-color);
+        }
+        
+        .price-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .buy .price-value {
+            color: var(--buy-color);
+        }
+        
+        .sell .price-value {
+            color: var(--sell-color);
+        }
+        
+        .mode-hint {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .price-levels {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>回调反弹买卖目标计算器</h1>
+            <p class="subtitle">基于炒手坤壱独研算法的目标价位计算器</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab buy-tab active" data-tab="buy-tab">买入策略</div>
+            <div class="tab sell-tab" data-tab="sell-tab">卖出策略</div>
+        </div>
+        
+        <!-- 买入策略选项卡 -->
+        <div id="buy-tab" class="tab-content active">
+            <div class="card">
+                <h2 class="card-title buy-title">两点上升买入模式</h2>
+                <div class="mode-hint">
+                    <strong>模式说明：</strong> 此模式适用于上升趋势中的回调买入机会。输入最近的高点和低点价格，计算反弹目标位。
+                </div>
+                
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="twoBuyHigh">高点价格</label>
+                        <input type="number" id="twoBuyHigh" step="0.01" placeholder="输入高点价格">
+                    </div>
+                    <div class="input-group">
+                        <label for="twoBuyLow">低点价格</label>
+                        <input type="number" id="twoBuyLow" step="0.01" placeholder="输入低点价格">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="calculate-btn" data-mode="twoPointBuy">计算目标价位</button>
+                    <button class="reset-btn" onclick="resetInputs('buy-tab')">重置输入</button>
+                </div>
+                
+                <div id="twoBuyResult" class="result">
+                    <h3 class="result-title">两点上升买入目标价位</h3>
+                    <div class="price-levels">
+                        <!-- 结果将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title buy-title">三点下降买入模式</h2>
+                <div class="mode-hint">
+                    <strong>模式说明：</strong> 此模式识别更复杂的趋势结构，基于前高、次高和低点计算买入目标位，适合捕捉反转机会。
+                </div>
+                
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="threeBuyPrevHigh">前高价</label>
+                        <input type="number" id="threeBuyPrevHigh" step="0.01" placeholder="输入前一个高点价格">
+                    </div>
+                    <div class="input-group">
+                        <label for="threeBuyLow">低价</label>
+                        <input type="number" id="threeBuyLow" step="0.01" placeholder="输入低点价格">
+                    </div>
+                    <div class="input-group">
+                        <label for="threeBuySecondHigh">次高价</label>
+                        <input type="number" id="threeBuySecondHigh" step="0.01" placeholder="输入次高点价格">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="calculate-btn" data-mode="threePointBuy">计算目标价位</button>
+                    <button class="reset-btn" onclick="resetInputs('buy-tab')">重置输入</button>
+                </div>
+                
+                <div id="threeBuyResult" class="result">
+                    <h3 class="result-title">三点下降买入目标价位</h3>
+                    <div class="price-levels">
+                        <!-- 结果将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 卖出策略选项卡 -->
+        <div id="sell-tab" class="tab-content">
+            <div class="card">
+                <h2 class="card-title sell-title">两点下降卖出模式</h2>
+                <div class="mode-hint">
+                    <strong>模式说明：</strong> 此模式适用于下降趋势中的反弹卖出机会。输入最近的低点和高点价格，计算回落目标位。
+                </div>
+                
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="twoSellHigh">高点价格</label>
+                        <input type="number" id="twoSellHigh" step="0.01" placeholder="输入高点价格">
+                    </div>
+                    <div class="input-group">
+                        <label for="twoSellLow">低点价格</label>
+                        <input type="number" id="twoSellLow" step="0.01" placeholder="输入低点价格">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="calculate-btn" data-mode="twoPointSell">计算目标价位</button>
+                    <button class="reset-btn" onclick="resetInputs('sell-tab')">重置输入</button>
+                </div>
+                
+                <div id="twoSellResult" class="result">
+                    <h3 class="result-title">两点下降卖出目标价位</h3>
+                    <div class="price-levels">
+                        <!-- 结果将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title sell-title">三点上升卖出模式</h2>
+                <div class="mode-hint">
+                    <strong>模式说明：</strong> 此模式识别更复杂的趋势结构，基于前低、次低和高点计算卖出目标位，适合捕捉顶部反转机会。
+                </div>
+                
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="threeSellPrevLow">前低价</label>
+                        <input type="number" id="threeSellPrevLow" step="0.01" placeholder="输入前一个低点价格">
+                    </div>
+                    <div class="input-group">
+                        <label for="threeSellHigh">高位价</label>
+                        <input type="number" id="threeSellHigh" step="0.01" placeholder="输入高点价格">
+                    </div>
+                    <div class="input-group">
+                        <label for="threeSellSecondLow">次低价</label>
+                        <input type="number" id="threeSellSecondLow" step="0.01" placeholder="输入次低点价格">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="calculate-btn" data-mode="threePointSell">计算目标价位</button>
+                    <button class="reset-btn" onclick="resetInputs('sell-tab')">重置输入</button>
+                </div>
+                
+                <div id="threeSellResult" class="result">
+                    <h3 class="result-title">三点上升卖出目标价位</h3>
+                    <div class="price-levels">
+                        <!-- 结果将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 选项卡切换功能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 移除所有选项卡的活动状态
+                document.querySelectorAll('.tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                // 隐藏所有内容
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // 设置当前选项卡为活动状态
+                this.classList.add('active');
+                // 显示对应内容
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // 计算按钮事件处理
+        document.querySelectorAll('.calculate-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const mode = this.getAttribute('data-mode');
+                calculateTargets(mode);
+            });
+        });
+        
+        // 计算目标价位函数
+        function calculateTargets(mode) {
+            let results = {};
+            
+            try {
+                if (mode === 'twoPointBuy') {
+                    const highPrice = parseFloat(document.getElementById('twoBuyHigh').value);
+                    const lowPrice = parseFloat(document.getElementById('twoBuyLow').value);
+                    
+                    if (isNaN(highPrice) || isNaN(lowPrice)) {
+                        alert('请输入有效的高点和低点价格');
+                        return;
+                    }
+                    
+                    results = calculateTwoPointBuy(highPrice, lowPrice);
+                    displayResults('twoBuyResult', results, 'buy');
+                    
+                } else if (mode === 'threePointBuy') {
+                    const prevHigh = parseFloat(document.getElementById('threeBuyPrevHigh').value);
+                    const lowPrice = parseFloat(document.getElementById('threeBuyLow').value);
+                    const secondHigh = parseFloat(document.getElementById('threeBuySecondHigh').value);
+                    
+                    if (isNaN(prevHigh) || isNaN(lowPrice) || isNaN(secondHigh)) {
+                        alert('请输入有效的价格参数');
+                        return;
+                    }
+                    
+                    results = calculateThreePointBuy(prevHigh, lowPrice, secondHigh);
+                    displayResults('threeBuyResult', results, 'buy');
+                    
+                } else if (mode === 'twoPointSell') {
+                    const highPrice = parseFloat(document.getElementById('twoSellHigh').value);
+                    const lowPrice = parseFloat(document.getElementById('twoSellLow').value);
+                    
+                    if (isNaN(highPrice) || isNaN(lowPrice)) {
+                        alert('请输入有效的高点和低点价格');
+                        return;
+                    }
+                    
+                    results = calculateTwoPointSell(highPrice, lowPrice);
+                    displayResults('twoSellResult', results, 'sell');
+                    
+                } else if (mode === 'threePointSell') {
+                    const prevLow = parseFloat(document.getElementById('threeSellPrevLow').value);
+                    const highPrice = parseFloat(document.getElementById('threeSellHigh').value);
+                    const secondLow = parseFloat(document.getElementById('threeSellSecondLow').value);
+                    
+                    if (isNaN(prevLow) || isNaN(highPrice) || isNaN(secondLow)) {
+                        alert('请输入有效的价格参数');
+                        return;
+                    }
+                    
+                    results = calculateThreePointSell(prevLow, highPrice, secondLow);
+                    displayResults('threeSellResult', results, 'sell');
+                }
+            } catch (error) {
+                alert('计算过程中发生错误: ' + error.message);
+            }
+        }
+        
+        // 显示结果函数
+        function displayResults(resultElementId, results, type) {
+            const resultElement = document.getElementById(resultElementId);
+            const priceLevelsContainer = resultElement.querySelector('.price-levels');
+            
+            // 清空之前的结果
+            priceLevelsContainer.innerHTML = '';
+            
+            // 根据模式类型设置标题和样式
+            const titles = {
+                'twoPointBuy': ['买入C1', '买入C2', '买入C3'],
+                'threePointBuy': ['买入D1', '买入D2', '买入D3'],
+                'twoPointSell': ['卖出C1', '卖出C2', '卖出C3'],
+                'threePointSell': ['卖出D1', '卖出D2', '卖出D3']
+            };
+            
+            // 获取对应的标题
+            let modeTitles = [];
+            if (resultElementId.includes('twoBuy')) modeTitles = titles.twoPointBuy;
+            else if (resultElementId.includes('threeBuy')) modeTitles = titles.threePointBuy;
+            else if (resultElementId.includes('twoSell')) modeTitles = titles.twoPointSell;
+            else if (resultElementId.includes('threeSell')) modeTitles = titles.threePointSell;
+            
+            // 创建价格级别元素
+            Object.keys(results).forEach((key, index) => {
+                const priceLevel = document.createElement('div');
+                priceLevel.className = `price-level ${type}`;
+                
+                priceLevel.innerHTML = `
+                    <div class="price-label">${modeTitles[index] || key}</div>
+                    <div class="price-value">${results[key].toFixed(2)}</div>
+                    <div class="price-desc">目标价位 ${index + 1}</div>
+                `;
+                
+                priceLevelsContainer.appendChild(priceLevel);
+            });
+            
+            // 显示结果区域
+            resultElement.style.display = 'block';
+            
+            // 平滑滚动到结果区域
+            resultElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // 重置输入函数
+        function resetInputs(tab) {
+            const inputs = document.querySelectorAll(`#${tab} input`);
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            
+            const results = document.querySelectorAll(`#${tab} .result`);
+            results.forEach(result => {
+                result.style.display = 'none';
+            });
+        }
+        
+        // 两点买入模式计算函数
+        function calculateTwoPointBuy(highPrice, lowPrice) {
+            const var1 = highPrice / lowPrice;
+            const var2 = Math.sqrt(Math.sqrt(var1));
+            const var3 = Math.sqrt(var1);
+            const var4 = var3 + var2 - 1;
+            
+            return {
+                buyC1: highPrice / var2,
+                buyC2: highPrice / var3,
+                buyC3: highPrice / var4
+            };
+        }
+        
+        // 两点卖出模式计算函数
+        function calculateTwoPointSell(highPrice, lowPrice) {
+            const var11 = highPrice / lowPrice;
+            const var21 = Math.sqrt(Math.sqrt(var11));
+            const var31 = Math.sqrt(var11);
+            const var41 = var31 + var21 - 1;
+            
+            return {
+                sellC1: lowPrice * var21,
+                sellC2: lowPrice * var31,
+                sellC3: lowPrice * var41
+            };
+        }
+        
+        // 三点买入模式计算函数
+        function calculateThreePointBuy(prevHigh, lowPrice, secondHigh) {
+            const varJ1 = Math.sqrt(prevHigh / lowPrice);
+            const varJ2 = Math.sqrt(varJ1);
+            
+            return {
+                buyD1: lowPrice / varJ2,
+                buyD2: lowPrice / varJ1,
+                buyD3: lowPrice / (varJ1 + varJ2 - 1)
+            };
+        }
+        
+        // 三点卖出模式计算函数
+        function calculateThreePointSell(prevLow, highPrice, secondLow) {
+            const varV1 = Math.sqrt(highPrice / prevLow);
+            const varV2 = Math.sqrt(varV1);
+            
+            const N1 = highPrice / varV2;
+            const N2 = highPrice / varV1;
+            const N3 = highPrice / (varV2 + varV1 - 1);
+            
+            return {
+                sellD1: 2 * highPrice - prevLow - (N2 - N3),
+                sellD2: highPrice + (highPrice - prevLow),
+                sellD3: 2 * highPrice - prevLow + (N1 - N2)
+            };
+        }
+    </script>
+</body>
+</html>

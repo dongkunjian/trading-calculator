@@ -293,7 +293,7 @@
         <!-- 买入策略选项卡 -->
         <div id="buy-tab" class="tab-content active">
             <div class="card">
-                <h2 class="card-title buy-title">两点上升买入模式</h2>
+                <h2 class="card-title buy-title">两点上升“/”回调买入模式</h2>
                 <div class="mode-hint">
                     <strong>模式说明：</strong> 此模式适用于上升趋势中的回调买入机会。输入最近的高点和低点价格，计算反弹目标位。
                 </div>
@@ -315,7 +315,7 @@
                 </div>
                 
                 <div id="twoBuyResult" class="result">
-                    <h3 class="result-title">两点上升买入目标价位</h3>
+                    <h3 class="result-title">两点上升回调买入目标价位</h3>
                     <div class="price-levels">
                         <!-- 结果将通过JavaScript动态生成 -->
                     </div>
@@ -323,7 +323,7 @@
             </div>
             
             <div class="card">
-                <h2 class="card-title buy-title">三点下降买入模式</h2>
+                <h2 class="card-title buy-title">三点下降“\/\”反弹买入模式</h2>
                 <div class="mode-hint">
                     <strong>模式说明：</strong> 此模式识别更复杂的趋势结构，基于前高、次高和低点计算买入目标位，适合捕捉反转机会。
                 </div>
@@ -349,7 +349,7 @@
                 </div>
                 
                 <div id="threeBuyResult" class="result">
-                    <h3 class="result-title">三点下降买入目标价位</h3>
+                    <h3 class="result-title">三点下降反弹买入目标价位</h3>
                     <div class="price-levels">
                         <!-- 结果将通过JavaScript动态生成 -->
                     </div>
@@ -360,7 +360,7 @@
         <!-- 卖出策略选项卡 -->
         <div id="sell-tab" class="tab-content">
             <div class="card">
-                <h2 class="card-title sell-title">两点下降卖出模式</h2>
+                <h2 class="card-title sell-title">两点下降“\”反弹卖出模式</h2>
                 <div class="mode-hint">
                     <strong>模式说明：</strong> 此模式适用于下降趋势中的反弹卖出机会。输入最近的低点和高点价格，计算回落目标位。
                 </div>
@@ -382,7 +382,7 @@
                 </div>
                 
                 <div id="twoSellResult" class="result">
-                    <h3 class="result-title">两点下降卖出目标价位</h3>
+                    <h3 class="result-title">两点下降反弹卖出目标价位</h3>
                     <div class="price-levels">
                         <!-- 结果将通过JavaScript动态生成 -->
                     </div>
@@ -390,7 +390,7 @@
             </div>
             
             <div class="card">
-                <h2 class="card-title sell-title">三点上升卖出模式</h2>
+                <h2 class="card-title sell-title">三点上升“/\/”反转卖出模式</h2>
                 <div class="mode-hint">
                     <strong>模式说明：</strong> 此模式识别更复杂的趋势结构，基于前低、次低和高点计算卖出目标位，适合捕捉顶部反转机会。
                 </div>
@@ -416,7 +416,7 @@
                 </div>
                 
                 <div id="threeSellResult" class="result">
-                    <h3 class="result-title">三点上升卖出目标价位</h3>
+                    <h3 class="result-title">三点上升反转卖出目标价位</h3>
                     <div class="price-levels">
                         <!-- 结果将通过JavaScript动态生成 -->
                     </div>
@@ -524,10 +524,10 @@
             
             // 根据模式类型设置标题和样式
             const titles = {
-                'twoPointBuy': ['买入C1', '买入C2', '买入C3'],
-                'threePointBuy': ['买入D1', '买入D2', '买入D3'],
-                'twoPointSell': ['卖出C1', '卖出C2', '卖出C3'],
-                'threePointSell': ['卖出D1', '卖出D2', '卖出D3']
+                'twoPointBuy': ['弱支撑C1', '中支撑C2', '强支撑C3'],
+                'threePointBuy': ['弱支撑D1', '中支撑D2', '强支撑D3'],
+                'twoPointSell': ['弱压力C1', '中压力C2', '强压力C3'],
+                'threePointSell': ['弱压力D1', '中压力D2', '强压力D3']
             };
             
             // 获取对应的标题

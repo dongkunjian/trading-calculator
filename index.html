@@ -484,6 +484,33 @@ function snap(x, y, rng) {
   const p = Math.abs(y - yh) <= Math.abs(y - yl) ? b.h : b.l;
   return { d: b.d, p };
 }
+/* 磁吸升级（老板 11-27 令）：选点自动吸附到附近的真实摆动高低点（局部极值）。
+   expect 含"高"找摆动高点、含"低"找摆动低点；±8 根内取最近极值，找不到退回普通吸附。 */
+function pivots() {
+  const k = S.k; if (!k.length) return { Hi: [], Lo: [] };
+  const key = S.klt + '_' + k.length + '_' + k[k.length - 1].d;
+  if (S._piv && S._pivKey === key) return S._piv;
+  const K = 2, Hi = [], Lo = [];
+  for (let i = 0; i < k.length; i++) {
+    let isH = true, isL = true;
+    for (let j = Math.max(0, i - K); j <= Math.min(k.length - 1, i + K); j++) {
+      if (k[j].h > k[i].h) isH = false;
+      if (k[j].l < k[i].l) isL = false;
+    }
+    if (isH) Hi.push(i); if (isL) Lo.push(i);
+  }
+  S._piv = { Hi, Lo }; S._pivKey = key; return S._piv;
+}
+function snapEx(x, y, rng, expect) {
+  if (!expect) return snap(x, y, rng);
+  const wantHigh = expect.indexOf('高') >= 0;
+  const piv = pivots(), list = wantHigh ? piv.Hi : piv.Lo;
+  const ci = clamp(iOf(x), 0, S.k.length - 1);
+  const R = 8; let best = null, bd = 1e9;
+  for (const i of list) { const d = Math.abs(i - ci); if (d <= R && d < bd) { bd = d; best = i; } }
+  if (best != null) { const b = S.k[best]; return { d: b.d, p: wantHigh ? b.h : b.l, piv: true }; }
+  return snap(x, y, rng);
+}
 
 /* ================= 渲染 ================= */
 let rafPending = false;
@@ -560,6 +587,16 @@ function render() {
     const tw = ctx.measureText(label).width + 10;
     ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(clamp(S.cross.x - tw / 2, 0, W - tw), H - PAD.b + 2, tw, 16);
     ctx.fillStyle = '#fff'; ctx.fillText(label, clamp(S.cross.x, tw / 2, W - tw / 2), H - PAD.b + 14);
+    /* 磁吸预览：结构模式下高亮将要吸附的摆动点 */
+    if (S.ksm) {
+      const meta = KS_META[S.ksm], expect = meta.pick[S.picks.length] || '';
+      if (expect) {
+        const spv = snapEx(S.cross.x, S.cross.y, rng, expect);
+        const px = xOf(idxOfDate(spv.d)), py = pToY(spv.p, rng);
+        ctx.strokeStyle = '#ffd479'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(px, py, 9, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
+      }
+    }
   }
 }
 function drawLine(L, rng) {
@@ -639,7 +676,8 @@ function setTool(t) {
   cv.className = t === 'cursor' ? 'tool-cursor' : '';
 }
 function updateHintForTool() {
-  if (S.ksm) { const meta = KS_META[S.ksm]; hint(`【${meta.struct}·画${meta.kind === 'support' ? '支撑' : '压力'}】点第 ${S.picks.length + 1} 个点：${meta.pick[S.picks.length]}（点K线的最高/最低价自动吸附）`); return; }
+  if (S.ksm) { const meta = KS_META[S.ksm]; const exp = meta.pick[S.picks.length] || '';
+    hint(`【${meta.struct}·画${meta.kind === 'support' ? '支撑' : '压力'}】点第 ${S.picks.length + 1} 个点：${exp}（自动磁吸附近${exp.indexOf('高') >= 0 ? '高' : '低'}点）`); return; }
   hint({ cursor: '', hline: '点一下K线图放置水平线（自动吸附高低价）', tline: '点第1个点画趋势线' }[S.tool] || '');
 }
 $$('.tools [data-tool]').forEach((b) => b.addEventListener('click', () => { S.ksm = ''; $('#ksMode').value = ''; setTool(b.dataset.tool); }));
@@ -679,7 +717,9 @@ cv.addEventListener('pointerdown', (e) => {
   }
   /* 放线 / 选点 */
   const rng = visRange();
-  const sp = snap(x, y, rng);
+  const meta0 = S.ksm ? KS_META[S.ksm] : null;
+  const expect = meta0 ? meta0.pick[S.picks.length] || '' : '';
+  const sp = snapEx(x, y, rng, expect);
   if (S.ksm) {
     S.picks.push(sp);
     const meta = KS_META[S.ksm];

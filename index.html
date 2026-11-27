@@ -7,6 +7,8 @@
     <style>
         :root {
             --primary-color: #3498db;
+            --up-color: #e74c3c;
+            --dn-color: #2ecc71;
             --buy-color: #2ecc71;
             --sell-color: #e74c3c;
             --bg-dark: #1e1e2d;
@@ -547,7 +549,7 @@ function render() {
   const w = Math.max(1, bw() * 0.66);
   for (let i = S.start; i < end; i++) {
     const b = S.k[i], x = xOf(i), up = b.c >= b.o;
-    ctx.strokeStyle = ctx.fillStyle = up ? '#2ecc71' : '#e74c3c';
+    ctx.strokeStyle = ctx.fillStyle = up ? '#e74c3c' : '#2ecc71';  // A股口径：涨红跌绿
     ctx.beginPath(); ctx.moveTo(x, pToY(b.h, rng)); ctx.lineTo(x, pToY(b.l, rng)); ctx.stroke();
     const y1 = pToY(Math.max(b.o, b.c), rng), y2 = pToY(Math.min(b.o, b.c), rng);
     ctx.fillRect(x - w / 2, y1, w, Math.max(1, y2 - y1));
@@ -558,7 +560,7 @@ function render() {
   const yl = pToY(last.c, rng);
   ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,.35)';
   ctx.beginPath(); ctx.moveTo(PAD.l, yl); ctx.lineTo(W - PAD.r, yl); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = last.c >= last.o ? '#2ecc71' : '#e74c3c';
+  ctx.fillStyle = last.c >= last.o ? '#e74c3c' : '#2ecc71';
   ctx.fillRect(W - PAD.r + 2, yl - 9, PAD.r - 6, 18);
   ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(fmt2(last.c), W - PAD.r + 6, yl + 4);
 

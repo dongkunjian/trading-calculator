@@ -502,24 +502,19 @@ function pivots() {
   }
   S._piv = { Hi, Lo }; S._pivKey = key; return S._piv;
 }
-/* 磁吸 v2（老板 11-27 二令）：用户随手点，系统优化吸附——
-   半径 ±15 根内，按「横向K线距离 + 纵向价差占可见区比例」综合评分挑最优峰谷；
-   越缩放（count 越小）横向权重越大，精挑细选；找不到退回普通吸附。 */
+/* 磁吸 v3（老板 11-27 三令）：以十字光标所在K线为准——
+   光标指着哪根K线，就吸那根的最高/最低价；只向 ±2 根小范围借力
+   （点略偏时仍能抓到贴着的峰谷），范围小所以指哪吸哪，绝不吸远处的点。 */
 function snapEx(x, y, rng, expect) {
   if (!expect) return snap(x, y, rng);
   const wantHigh = expect.indexOf('高') >= 0;
-  const piv = pivots(), list = wantHigh ? piv.Hi : piv.Lo;
   const ci = clamp(iOf(x), 0, S.k.length - 1);
-  const cy = yToP(y, rng), span = rng.hi - rng.lo || 1;
-  const R = 15; let best = null, bs = 1e9;
-  for (const i of list) {
-    const dx = Math.abs(i - ci); if (dx > R) continue;
+  const W = 2; let best = ci, bp = wantHigh ? S.k[ci].h : S.k[ci].l;
+  for (let i = Math.max(0, ci - W); i <= Math.min(S.k.length - 1, ci + W); i++) {
     const pv = wantHigh ? S.k[i].h : S.k[i].l;
-    const s = dx * 3 / S.count + Math.abs(pv - cy) / span * 2;
-    if (s < bs) { bs = s; best = i; }
+    if (wantHigh ? pv > bp : pv < bp) { best = i; bp = pv; }
   }
-  if (best != null) { const b = S.k[best]; return { d: b.d, p: wantHigh ? b.h : b.l, piv: true }; }
-  return snap(x, y, rng);
+  return { d: S.k[best].d, p: bp, piv: best !== ci };
 }
 
 /* ================= 渲染 ================= */

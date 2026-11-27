@@ -142,12 +142,16 @@
                     <button data-tool="hline" title="点一下画水平压力/支撑线">─ 水平线</button>
                     <button data-tool="tline" title="点两个位置画趋势斜线">╱ 趋势线</button>
                     <span class="sep"></span>
-                    <select id="ksMode" title="坤壱模式：按提示在图上依次点高低点">
-                        <option value="">坤壱模式…</option>
-                        <option value="twoPointBuy">两点回调买入（高点→低点）</option>
-                        <option value="threePointBuy">三点反弹买入（前高→低→次高）</option>
-                        <option value="twoPointSell">两点反弹卖出（低点→高点）</option>
-                        <option value="threePointSell">三点反转卖出（前低→高→次低）</option>
+                    <select id="ksMode" title="按坤壱结构画法：选模式后按提示在图上依次点高低点">
+                        <option value="">选结构画法…</option>
+                        <optgroup label="下跌结构">
+                            <option value="dn_support">画支撑：前高 → 低点 → 次高</option>
+                            <option value="dn_press">画压力：高点 → 低点</option>
+                        </optgroup>
+                        <optgroup label="上涨结构">
+                            <option value="up_support">画支撑：低点 → 高点</option>
+                            <option value="up_press">画压力：前低 → 高点 → 次低</option>
+                        </optgroup>
                     </select>
                     <button id="btnUndo" title="撤销未完成的选点">↩</button>
                     <button id="btnDel" disabled title="删除选中的线">删</button>
@@ -290,15 +294,43 @@ function calcThreePointSell(prevLow, high, secondLow) {
   const N1 = high / v2, N2 = high / v1, N3 = high / (v2 + v1 - 1);
   return { labels: ['弱压力D1', '中压力D2', '强压力D3'], vals: [2 * high - prevLow - (N2 - N3), high + (high - prevLow), 2 * high - prevLow + (N1 - N2)] };
 }
+/* ================= 坤壱结构画法（老板 11-27 令） =================
+   下跌结构：
+   ① 前高→低点→次高 → 弱/中/强支撑
+   ② 高点→低点     → 弱/中/强压力
+   上涨结构：
+   ③ 低点→高点     → 弱/中/强支撑
+   ④ 前低→高点→次低 → 弱/中/强压力
+   —— 选点顺序固定，出线类型固定，不做自由模式。 */
 const KS_META = {
-  twoPointBuy:   { pick: ['高点', '低点'], side: 'buy',   calc: (p) => calcTwoPointBuy(p[0], p[1]),
-                   check: (p) => p[0] > p[1] ? '' : '两点买入要求 第1点(高点) 高于 第2点(低点)' },
-  threePointBuy: { pick: ['前高价', '低点', '次高价'], side: 'buy', calc: (p) => calcThreePointBuy(p[0], p[1], p[2]),
-                   check: (p) => (p[0] > p[1] && p[2] > p[1] && p[2] < p[0]) ? '' : '三点买入要求 前高 > 次高 > 低点' },
-  twoPointSell:  { pick: ['低点', '高点'], side: 'sell',  calc: (p) => calcTwoPointSell(p[1], p[0]),
-                   check: (p) => p[1] > p[0] ? '' : '两点卖出要求 第2点(高点) 高于 第1点(低点)' },
-  threePointSell:{ pick: ['前低点', '高点', '次低点'], side: 'sell', calc: (p) => calcThreePointSell(p[0], p[1], p[2]),
-                   check: (p) => (p[1] > p[0] && p[1] > p[2] && p[2] > p[0]) ? '' : '三点卖出要求 高点 > 次低点 > 前低点' },
+  /* 下跌结构①：点 前高/低点/次高，算支撑（原三点买入公式：low=低点, prevHigh=前高） */
+  dn_support: {
+    struct: '下跌结构', kind: 'support',
+    pick: ['前高', '低点', '次高'],
+    calc: (p) => calcThreePointBuy(p[0], p[1], p[2]),
+    check: (p) => (p[0] > p[2] && p[2] > p[1]) ? '' : '下跌结构要求：前高 > 次高 > 低点，请按顺序重选',
+  },
+  /* 下跌结构②：点 高点/低点，算压力（原两点卖出公式：high=高点, low=低点） */
+  dn_press: {
+    struct: '下跌结构', kind: 'press',
+    pick: ['高点', '低点'],
+    calc: (p) => calcTwoPointSell(p[0], p[1]),
+    check: (p) => (p[0] > p[1]) ? '' : '下跌结构要求：高点 > 低点，请按顺序重选',
+  },
+  /* 上涨结构③：点 低点/高点，算支撑（原两点买入公式：high=高点, low=低点） */
+  up_support: {
+    struct: '上涨结构', kind: 'support',
+    pick: ['低点', '高点'],
+    calc: (p) => calcTwoPointBuy(p[1], p[0]),
+    check: (p) => (p[1] > p[0]) ? '' : '上涨结构要求：高点 > 低点，请按顺序重选',
+  },
+  /* 上涨结构④：点 前低/高点/次低，算压力（原三点卖出公式：prevLow=前低, high=高点） */
+  up_press: {
+    struct: '上涨结构', kind: 'press',
+    pick: ['前低', '高点', '次低'],
+    calc: (p) => calcThreePointSell(p[0], p[1], p[2]),
+    check: (p) => (p[1] > p[2] && p[2] > p[0]) ? '' : '上涨结构要求：高点 > 次低 > 前低，请按顺序重选',
+  },
 };
 
 /* ================= 状态 ================= */
@@ -317,6 +349,7 @@ const S = {
   drag: null, hover: null, cross: null,
   dec: 2,
 };
+try { window.S = S; } catch {}   // 调试/自动化走查用
 let uid = 1;
 const nid = () => 'L' + (uid++) + '_' + Date.now().toString(36);
 
@@ -551,7 +584,8 @@ function drawLine(L, rng) {
     ctx.setLineDash([]);
     if (sel) { ctx.fillStyle = '#fff'; [[x1, y1], [x2, y2]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); }); }
   } else if (L.type === 'ks') {
-    const color = L.side === 'buy' ? '#2ecc71' : '#e74c3c';
+    /* 支撑=绿、压力=红（按坤壱结构语义，不再按 buy/sell） */
+    const color = L.kind === 'support' ? '#2ecc71' : '#e74c3c';
     const x0 = xOf(idxOfDate(L.pts[L.pts.length - 1].d));
     L.vals.forEach((v, k) => {
       const y = pToY(v, rng);
@@ -605,7 +639,7 @@ function setTool(t) {
   cv.className = t === 'cursor' ? 'tool-cursor' : '';
 }
 function updateHintForTool() {
-  if (S.ksm) { const meta = KS_META[S.ksm]; hint(`【${$('#ksMode').selectedOptions[0].text}】点第 ${S.picks.length + 1} 个点：${meta.pick[S.picks.length]}（点K线的最高/最低价自动吸附）`); return; }
+  if (S.ksm) { const meta = KS_META[S.ksm]; hint(`【${meta.struct}·画${meta.kind === 'support' ? '支撑' : '压力'}】点第 ${S.picks.length + 1} 个点：${meta.pick[S.picks.length]}（点K线的最高/最低价自动吸附）`); return; }
   hint({ cursor: '', hline: '点一下K线图放置水平线（自动吸附高低价）', tline: '点第1个点画趋势线' }[S.tool] || '');
 }
 $$('.tools [data-tool]').forEach((b) => b.addEventListener('click', () => { S.ksm = ''; $('#ksMode').value = ''; setTool(b.dataset.tool); }));
@@ -674,21 +708,21 @@ function finishKs() {
   const err = meta.check(prices);
   if (err) { hint('⚠ ' + err + '，重新选点'); S.picks = []; requestRender(); return; }
   const r = meta.calc(prices);
-  S.lines.push({ id: nid(), type: 'ks', mode: S.ksm, side: meta.side, pts: S.picks.slice(), labels: r.labels, vals: r.vals });
+  S.lines.push({ id: nid(), type: 'ks', mode: S.ksm, kind: meta.kind, struct: meta.struct, pts: S.picks.slice(), labels: r.labels, vals: r.vals });
   S.picks = [];
   S.ksm = ''; $('#ksMode').value = '';
   saveLines(); fitResultPanel();
   setTool('cursor');
   hint('已生成 ' + r.labels.join('/') + ' 目标位（右侧结果卡同步）');
-  showKsResult(r, meta.side);
+  showKsResult(r, meta.kind);
 }
-function showKsResult(r, side) {
+function showKsResult(r, kind) {
   $('#resultPanel').innerHTML = r.labels.map((lb, i) =>
-    `<div class="res-card ${side}"><div class="k">${lb}</div><div class="v">${fmt2(r.vals[i])}</div></div>`).join('');
+    `<div class="res-card ${kind === 'support' ? 'buy' : 'sell'}"><div class="k">${lb}</div><div class="v">${fmt2(r.vals[i])}</div></div>`).join('');
 }
 function fitResultPanel() {
   const ks = S.lines.filter((L) => L.type === 'ks').pop();
-  if (ks) showKsResult({ labels: ks.labels, vals: ks.vals }, ks.side);
+  if (ks) showKsResult({ labels: ks.labels, vals: ks.vals }, ks.kind);
   else $('#resultPanel').innerHTML = '';
 }
 cv.addEventListener('pointermove', (e) => {
